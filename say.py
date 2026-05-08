@@ -6,6 +6,9 @@ import asyncio
 from flask import Flask
 from threading import Thread
 import time
+# --- THÊM 2 DÒNG NÀY ĐỂ FIX LỖI FFMEG TRÊN RENDER ---
+from static_ffmpeg import add_paths
+add_paths()
 
 # --- CẤU HÌNH WEB SERVER ĐỂ TREO 24/7 ---
 app = Flask('')

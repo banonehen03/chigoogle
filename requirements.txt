@@ -1,4 +1,5 @@
 discord.py[voice]
 gTTS
 Flask
-PyNaCl  
+PyNaCl
+static-ffmpeg

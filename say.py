@@ -18,10 +18,14 @@ def home():
     return "Bot is alive!"
 
 def run():
-    # Lấy PORT từ hệ thống Render cấp phát
+    # Tắt bớt log của Flask để tiết kiệm tài nguyên
+    import logging
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)
+    
     port = int(os.environ.get("PORT", 8080))
-    app.run(host='0.0.0.0', port=port)
-
+    # Chạy Flask ở chế độ tối giản
+    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
 def keep_alive():
     t = Thread(target=run)
     t.start()
@@ -80,6 +84,7 @@ async def on_voice_state_update(member, before, after):
 # --- KHỞI CHẠY ---
 if __name__ == "__main__":
     keep_alive()
+    time.sleep(5)
     # Đảm bảo bạn đã đặt DISCORD_TOKEN trong Environment Variables trên Render
     token = os.environ.get('DISCORD_TOKEN')
     if token:

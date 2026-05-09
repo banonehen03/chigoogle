@@ -9,11 +9,15 @@ class General(commands.Cog):
 
     @commands.command()
     async def help(self, ctx):
-        embed = discord.Embed(title="📚 Hướng dẫn sử dụng", color=discord.Color.blue())
-        embed.add_field(name="!say", value="Nói nội dung yêu cầu", inline=False)
-        embed.add_field(name="!uptime", value="Xem thời gian online", inline=False)
+        embed = discord.Embed(
+            title="📚 Hướng dẫn sử dụng Chị Google", 
+            color=discord.Color.blue(),
+            description="Dưới đây là các lệnh bạn có thể dùng:"
+        )
+        embed.add_field(name="`!say <nội dung>`", value="Chị Google sẽ nói nội dung này trong voice.", inline=False)
+        embed.add_field(name="`!uptime`", value="Xem thời gian bot đã hoạt động.", inline=False)
+        embed.set_footer(text=f"Yêu cầu bởi {ctx.author.display_name}") # Hiện tên người gọi lệnh
         await ctx.send(embed=embed)
-
     @commands.command()
     async def uptime(self, ctx):
         delta = datetime.datetime.now() - self.start_time

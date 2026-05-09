@@ -23,6 +23,7 @@ intents = discord.Intents.default()
 intents.members = True 
 intents.message_content = True
 
+# Thêm help_command=None vào đây để tắt cái bảng đen mặc định
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 async def load_extensions():

@@ -12,8 +12,14 @@ app = Flask('')
 def home(): return "Bot is alive!"
 
 def run():
+    import logging
+    # Tắt hoàn toàn các log thừa để tránh xung đột và nặng máy
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)
+    
     port = int(os.environ.get("PORT", 8080))
-    app.run(host='0.0.0.0', port=port)
+    # Thêm tham số threaded=True để xử lý nhiều yêu cầu cùng lúc
+    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False, threaded=True)
 
 def keep_alive():
     Thread(target=run).start()

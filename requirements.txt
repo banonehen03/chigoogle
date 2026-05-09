@@ -4,3 +4,5 @@ Flask
 PyNaCl
 static-ffmpeg
 wikipedia
+h11==0.16.0
+googletrans==4.0.0-rc1

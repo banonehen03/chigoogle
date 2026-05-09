@@ -16,6 +16,7 @@ class General(commands.Cog):
         )
         embed.add_field(name="`!say <nội dung>`", value="Chị Google sẽ nói nội dung này trong voice.", inline=False)
         embed.add_field(name="`!uptime`", value="Xem thời gian bot đã hoạt động.", inline=False)
+        embed.add_field(name="`!wiki <từ khóa>`", value="Tìm kiếm thông tin nhanh từ Wikipedia tiếng Việt.", inline=False)
         embed.set_footer(text=f"Yêu cầu bởi {ctx.author.display_name}") # Hiện tên người gọi lệnh
         await ctx.send(embed=embed)
     @commands.command()

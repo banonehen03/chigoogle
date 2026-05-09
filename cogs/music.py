@@ -3,6 +3,8 @@ from discord.ext import commands
 from gtts import gTTS
 import os
 import time
+from static_ffmpeg import add_paths
+add_paths()
 
 class Music(commands.Cog):
     def __init__(self, bot):

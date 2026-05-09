@@ -1,8 +1,6 @@
-discord.py[voice]
+discord.py
 gTTS
-Flask
-PyNaCl
+flask
 static-ffmpeg
 wikipedia
-h11==0.16.0
-googletrans==4.0.0-rc1
+deep-translator

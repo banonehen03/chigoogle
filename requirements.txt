@@ -4,3 +4,4 @@ flask
 static-ffmpeg
 wikipedia
 deep-translator
+requests

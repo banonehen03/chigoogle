@@ -18,6 +18,8 @@ class General(commands.Cog):
         embed.add_field(name="`!uptime`", value="Xem thời gian bot đã hoạt động.", inline=False)
         embed.add_field(name="`!wiki <từ khóa>`", value="Tìm kiếm thông tin nhanh từ Wikipedia tiếng Việt.", inline=False)
         embed.add_field(name="`!trans <mã_ngôn_ngữ> <nội dung>`", value="Dịch văn bản (Mã: vi, en, ja, ko, zh-cn...)", inline=False)
+        embed.add_field(name="`!weather <nội dung>`", value="xem dự báo thời tiết", inline=False)
+        embed.add_field(name="`!calc <phép tính>`", value="Tính toán nhanh (Ví dụ: !calc (150+50)*2 )", inline=False)
         embed.set_footer(text=f"Yêu cầu bởi {ctx.author.display_name}") # Hiện tên người gọi lệnh
         await ctx.send(embed=embed)
     @commands.command()

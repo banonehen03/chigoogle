@@ -3,3 +3,4 @@ gTTS
 Flask
 PyNaCl
 static-ffmpeg
+wikipedia

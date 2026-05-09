@@ -20,7 +20,7 @@ class Music(commands.Cog):
         if ctx.author.voice:
             vc = ctx.voice_client or await ctx.author.voice.channel.connect()
             fname = self.create_tts(msg)
-            vc.play(discord.FFmpegPCMAudio(fname), after=lambda e: os.remove(fname))
+            vc.play(discord.FFmpegPCMAudio(executable="ffmpeg", source=fname), after=lambda e: os.remove(fname))
         else:
             await ctx.send(f"Vào voice đi {ctx.author.display_name} ơi!")
 

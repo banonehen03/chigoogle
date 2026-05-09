@@ -1,7 +1,8 @@
-discord.py
+discord.py[voice]
 gTTS
 flask
 static-ffmpeg
 wikipedia
 deep-translator
 requests
+PyNaCl

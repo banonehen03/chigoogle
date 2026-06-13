@@ -37,43 +37,38 @@ class AutoReply(commands.Cog):
             return 'voice'
         return 'text'
 
-    # ================= LỆNH HELP TỰ ĐỘNG CẬP NHẬT =================
-    @commands.command(name="help")
-    async def help_command(self, ctx):
-        """Hiển thị bảng hướng dẫn sử dụng bot"""
+    # Hàm tạo bảng giao diện hướng dẫn (Không dùng Decorator command để tránh trùng tên)
+    async def send_help_embed(self, channel, author_display_name):
         embed = discord.Embed(
             title="🤖 BẢNG HƯỚNG DẪN SỬ DỤNG BOT",
             description="Chào Việt! Dưới đây là danh sách các lệnh và từ khóa tự động hiện tại.",
             color=discord.Color.blue()
         )
         
-        # Nhóm 1: Các lệnh quản lý hệ thống (Cần prefix !)
         admin_commands = (
             "`!img <từ khóa>`: Tìm kiếm hình ảnh trực tiếp qua Google API.\n"
-            "`!refresh`: Làm mới toàn bộ hệ thống và cập nhật code/biến môi trường.\n"
-            "`!noprefix <từ khóa>`: Tạo phản hồi tự động (Đính kèm file hoặc Reply).\n"
+            "`!refresh`: Làm mới hệ thống và cập nhật lại toàn bộ cogs.\n"
+            "`!noprefix <từ khóa>`: Tạo phản hồi tự động (Đính kèm hoặc Reply).\n"
             "`!delprefix <từ khóa>`: Xóa từ khóa tự động đã tạo.\n"
-            "`!listprefix`: Xem danh sách chi tiết cấu hình gốc."
+            "`!listprefix`: Xem danh sách cấu hình gốc."
         )
         embed.add_field(name="🛠️ LỆNH QUẢN LÝ (Cần dấu `!`)", value=admin_commands, inline=False)
 
-        # Nhóm 2: Các từ khóa rảnh tay (Noprefix)
         if self.reply_database:
             keywords_list = []
             for k, v in self.reply_database.items():
                 emoji = "🖼️" if v["type"] == "image" else "🎬" if v["type"] == "video" else "🔊" if v["type"] == "voice" else "📝"
                 keywords_list.append(f"{emoji} `{k}`")
-            
             noprefix_value = ", ".join(keywords_list)
         else:
-            noprefix_value = "*Chưa có từ khóa nào được tạo. Hãy dùng lệnh `!noprefix` để thêm!*"
+            noprefix_value = "*Chưa có từ khóa nào được tạo. Dùng `!noprefix` để thêm!*"
 
         embed.add_field(name="💬 TỪ KHÓA CHAT NHANH (Không cần dấu `!`)", value=noprefix_value, inline=False)
-        embed.set_footer(text=f"Yêu cầu bởi {ctx.author.display_name} • Hệ thống tự động kích hoạt")
+        embed.set_footer(text=f"Yêu cầu bởi {author_display_name} • Hệ thống tự động kích hoạt")
         
-        await ctx.send(embed=embed)
+        await channel.send(embed=embed)
 
-    # ================= CÁC LỆNH QUẢN LÝ KHÁC (Giữ nguyên luồng chuẩn) =================
+    # ================= CÁC LỆNH QUẢN LÝ TỪ KHÓA =================
     @commands.command(name="noprefix")
     @commands.has_permissions(administrator=True)
     async def noprefix(self, ctx, name: str, *, content: str = ""):
@@ -152,7 +147,7 @@ class AutoReply(commands.Cog):
             msg += f"• `{k}` ({v['type']} - {source})\n"
         await ctx.send(msg)
 
-    # ================= BẮT SỰ KIỆN CHAT ĐỂ TỰ ĐỘNG REPLY VÀ NOPREFIX HELP =================
+    # ================= LẮNG NGHE CHAT KHÔNG PREFIX =================
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
@@ -160,12 +155,12 @@ class AutoReply(commands.Cog):
 
         msg_content = message.content.strip().lower()
 
-        # Cho phép gõ chữ "help" không dấu prefix vẫn mở được menu hướng dẫn
-        if msg_content == "help":
-            ctx = await self.bot.get_context(message)
-            await self.help_command(ctx)
+        # Bắt từ khóa help độc lập (có dấu ! hoặc không dấu đều mở bảng hướng dẫn)
+        if msg_content in ["help", "!help"]:
+            await self.send_help_embed(message.channel, message.author.display_name)
             return
 
+        # Phản hồi các từ khóa động động trong dữ liệu
         if msg_content in self.reply_database:
             data = self.reply_database[msg_content]
             res_type = data["type"]

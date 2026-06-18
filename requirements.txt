@@ -7,3 +7,4 @@ deep-translator
 requests
 PyNaCl
 moviepy
+psutil

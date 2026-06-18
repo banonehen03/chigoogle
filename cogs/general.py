@@ -20,6 +20,9 @@ class General(commands.Cog):
         embed.add_field(name="`!trans <mã_ngôn_ngữ> <nội dung>`", value="Dịch văn bản (Mã: vi, en, ja, ko, zh-cn...)", inline=False)
         embed.add_field(name="`!weather <nội dung>`", value="xem dự báo thời tiết", inline=False)
         embed.add_field(name="`!calc <phép tính>`", value="Tính toán nhanh (Ví dụ: !calc (150+50)*2 )", inline=False)
+        embed.add_field(name="`!noprefix`", value="không cần dùng giấu lệnh", inline=False)
+        embed.add_field(name="`!speak`", value="rep voice hoặc gửi voice", inline=False)
+        embed.add_field(name="`!getvoice`", value="lấy mp3 từ video", inline=False)
         embed.set_footer(text=f"Yêu cầu bởi {ctx.author.display_name}") # Hiện tên người gọi lệnh
         await ctx.send(embed=embed)
     @commands.command()

@@ -6,3 +6,4 @@ wikipedia
 deep-translator
 requests
 PyNaCl
+moviepy

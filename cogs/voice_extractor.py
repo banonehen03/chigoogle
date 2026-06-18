@@ -2,7 +2,12 @@ import discord
 from discord.ext import commands
 import os
 import json
-from moviepy.editor import VideoFileClip
+
+# Thử import theo bản MoviePy mới (v2.x), nếu lỗi thì tự động chuyển sang bản cũ (v1.x)
+try:
+    from moviepy import VideoFileClip
+except ImportError:
+    from moviepy.editor import VideoFileClip
 
 # Sử dụng chung file database json và thư mục lưu trữ media với autoreply
 DB_FILE = "noprefix_db.json"
@@ -54,7 +59,7 @@ class VoiceExtractor(commands.Cog):
             attachment = ctx.message.attachments[0]
 
         if not attachment:
-            await ctx.send("❌ Việt ơi, bạn phải đính kèm video hoặc reply một tin nhắn chứa video chứ!")
+            await ctx.send("❌ Bạn phải đính kèm video hoặc reply một tin nhắn chứa video chứ!")
             return
 
         # Kiểm tra đuôi file video
@@ -72,9 +77,9 @@ class VoiceExtractor(commands.Cog):
             # Tải video tạm về server Render
             await attachment.save(temp_video_path)
             
-            msg_processing = await ctx.send("🎬 Đang tách âm thanh từ video, Việt chờ một xíu nhé...")
+            msg_processing = await ctx.send("🎬 Đang tách âm thanh từ video, bạn chờ một xíu nhé...")
 
-            # Dùng moviepy để trích xuất audio
+            # Trích xuất audio thông qua biến đã import linh hoạt ở đầu file
             video_clip = VideoFileClip(temp_video_path)
             audio_clip = video_clip.audio
             audio_clip.write_audiofile(final_mp3_path, logger=None)

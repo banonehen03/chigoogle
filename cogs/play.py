@@ -3,24 +3,17 @@ from discord.ext import commands
 import os
 import asyncio
 import yt_dlp
-import requests
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 from io import BytesIO
 
-# Cấu hình yt-dlp chỉ để STREAM luồng nhạc từ Link cụ thể (Không dùng để search)
+# Cấu hình yt-dlp tối ưu riêng cho SoundCloud
 YTDL_OPTIONS = {
     'format': 'bestaudio/best',
     'noplaylist': True,
     'quiet': True,
+    'default_search': 'scsearch', # Ép hệ thống tìm kiếm trên SoundCloud
     'source_address': '0.0.0.0',
-    'nocheckcertificate': True,
-    # Thêm cấu hình bypass luồng video khi chạy play_audio
-    'extractor_args': {
-        'youtube': {
-            'player_client': ['android_music', 'ios'],
-            'skip': ['webpage', 'authcheck']
-        }
-    }
+    'nocheckcertificate': True
 }
 
 FFMPEG_OPTIONS = {
@@ -31,101 +24,72 @@ FFMPEG_OPTIONS = {
 class MusicBot(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.search_results = {} # Lưu tạm kết quả tìm kiếm theo từng user
+        self.search_results = {}
 
-    # Hàm vẽ ảnh danh sách bài hát (Menu từ 1 đến 5)
+    # Hàm vẽ ảnh danh sách bài hát (Menu từ 1 đến 5) bằng Pillow
     def create_menu_image(self, tracks):
         img_h = (len(tracks) * 60) + 60
         image = Image.new("RGBA", (500, img_h), (40, 40, 40, 255))
         draw = ImageDraw.Draw(image)
         
-        # Vẽ tiêu đề menu giống ảnh mẫu của Việt
-        draw.text((20, 15), "DANH SÁCH BÀI HÁT TÌM THẤY", fill=(0, 255, 128, 255))
+        # Tiêu đề màu xanh neon rực rỡ
+        draw.text((20, 15), "DANH SÁCH BÀI HÁT SOUNDCLOUD", fill=(255, 102, 0, 255))
         
         y_offset = 50
         for i, track in enumerate(tracks):
             # Vẽ số thứ tự
             draw.text((20, y_offset + 15), f"{i+1}.", fill=(255, 255, 255, 255))
             
-            # Vẽ tên bài hát (cắt ngắn nếu quá dài để không bị tràn ảnh)
-            title = track['title']
+            # Vẽ tên bài hát (cắt ngắn nếu quá dài)
+            title = track.get('title', 'Unknown Title')
             if len(title) > 40: title = title[:37] + "..."
             draw.text((50, y_offset + 5), title, fill=(255, 215, 0, 255))
             
-            # Vẽ thông tin nguồn kênh
-            draw.text((50, y_offset + 25), f"📺 Nguồn: YouTube | Kênh: {track.get('uploader', 'Ẩn')}", fill=(180, 180, 180, 255))
+            # Vẽ thông tin nghệ sĩ/thời lượng
+            duration = track.get('duration_string', 'N/A')
+            uploader = track.get('uploader', 'SoundCloud Artist')
+            draw.text((50, y_offset + 25), f"🎵 Artist: {uploader} | ⏱️ {duration}", fill=(180, 180, 180, 255))
             
-            # Vẽ đường gạch phân cách giữa các bài hát
+            # Đường gạch ngang phân cách
             draw.line([(20, y_offset + 50), (480, y_offset + 50)], fill=(60, 60, 60, 255))
             y_offset += 60
             
-        # Xuất ảnh ra bộ nhớ bytes để gửi trực tiếp lên Discord
         buffer = BytesIO()
         image.save(buffer, format="PNG")
         buffer.seek(0)
         return buffer
 
-    # Hàm dùng API key chính thức để tìm kiếm (Không lo bị chặn)
-    def search_youtube_api(self, query, api_key):
-        url = "https://www.googleapis.com/youtube/v3/search"
-        params = {
-            'q': query,
-            'part': 'snippet',
-            'type': 'video',
-            'maxResults': 5,
-            'key': api_key
-        }
-        try:
-            res = requests.get(url, params=params).json()
-            tracks = []
-            if "items" in res:
-                for item in res["items"]:
-                    video_id = item.get("id", {}).get("videoId")
-                    snippet = item.get("snippet", {})
-                    if video_id:
-                        tracks.append({
-                            'title': snippet.get('title'),
-                            'url': f"https://www.youtube.com/watch?v={video_id}",
-                            'uploader': snippet.get('channelTitle', 'YouTube')
-                        })
-                return tracks
-        except Exception as e:
-            print(f"Lỗi hệ thống YouTube API: {e}")
-            return []
-        return []
-
     @commands.command(name="play")
     async def search(self, ctx, *, query: str):
-        """Tìm kiếm nhạc bằng YouTube API chính chủ và trả về menu ảnh"""
+        """Tìm kiếm nhạc trên SoundCloud và trả về menu ảnh"""
         if not ctx.author.voice or not ctx.author.voice.channel:
             await ctx.send("❌ Việt ơi, bạn phải vào một phòng thoại (Voice Channel) trước đã nha!")
             return
 
-        # Đọc biến môi trường YOUTUBE_API_KEY mà Việt vừa dán trên Render
-        api_key = os.environ.get('YOUTUBE_API_KEY')
-        if not api_key:
-            await ctx.send("❌ Bot chưa đọc được biến `YOUTUBE_API_KEY` trên Render. Việt kiểm tra lại phần Environment nhé!")
-            return
+        await ctx.send(f"🔍 Đang tìm kiếm trên SoundCloud: **{query}**...")
 
-        await ctx.send(f"🔍 Đang dùng YouTube API tìm kiếm: **{query}**...")
+        # Sử dụng yt-dlp quét kết quả từ SoundCloud trực tiếp
+        with yt_dlp.YoutubeDL(YTDL_OPTIONS) as ydl:
+            try:
+                # Tìm kiếm lấy ra 5 kết quả hàng đầu
+                info = ydl.extract_info(f"scsearch5:{query}", download=False)
+                if 'entries' not in info or not info['entries']:
+                    await ctx.send("❌ Không tìm thấy bài hát nào trên SoundCloud phù hợp rồi Việt ơi.")
+                    return
+                
+                tracks = info['entries']
+                self.search_results[ctx.author.id] = tracks # Lưu tạm vào bộ nhớ user
+                
+                # Vẽ menu ảnh bằng Pillow
+                menu_buffer = self.create_menu_image(tracks)
+                discord_file = discord.File(fp=menu_buffer, filename="sc_music_menu.png")
+                
+                await ctx.send(content="👉 **Nhập số (1, 2, 3, 4, 5) để chọn bài hát phát vào Voice:**", file=discord_file)
 
-        # Chạy hàm lấy danh sách bài hát qua API
-        tracks = self.search_youtube_api(query, api_key)
+            except Exception as e:
+                await ctx.send(f"❌ Lỗi khi tìm kiếm nhạc SoundCloud: {e}")
 
-        if not tracks:
-            await ctx.send("❌ Không tìm thấy bài hát nào phù hợp qua API hoặc Key bị lỗi cấu hình.")
-            return
-
-        # Lưu kết quả tạm thời vào hàng đợi của user
-        self.search_results[ctx.author.id] = tracks
-        
-        # Tự động vẽ ảnh menu bằng Pillow
-        menu_buffer = self.create_menu_image(tracks)
-        discord_file = discord.File(fp=menu_buffer, filename="music_menu.png")
-        
-        await ctx.send(content="👉 **Nhập số (1, 2, 3, 4, 5) để chọn bài hát phát vào Voice:**", file=discord_file)
-
-    # Bộ lắng nghe bắt sự kiện gõ số chọn bài rảnh tay giống ảnh mẫu của Việt
+    # Lắng nghe sự kiện gõ số để chọn bài hát phát vào voice
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
@@ -135,21 +99,20 @@ class MusicBot(commands.Cog):
         if author_id in self.search_results:
             content = message.content.strip()
             
-            # Nếu Việt gõ số hợp lệ
             if content.isdigit():
                 choice = int(content) - 1
                 tracks = self.search_results[author_id]
                 
                 if 0 <= choice < len(tracks):
                     selected_track = tracks[choice]
-                    del self.search_results[author_id] # Chọn xong thì xóa hàng đợi
+                    del self.search_results[author_id] # Xóa khỏi hàng chờ ngay sau khi chọn
                     
                     ctx = await self.bot.get_context(message)
                     await self.play_audio(ctx, selected_track)
 
     async def play_audio(self, ctx, track):
         voice_channel = ctx.author.voice.channel
-        await ctx.send(f"⏳ Đang lấy luồng audio stream cho bài: **{track['title']}**...")
+        await ctx.send(f"⏳ Đang lấy luồng audio stream SoundCloud cho bài: **{track.get('title')}**...")
         
         try:
             vc = discord.utils.get(self.bot.voice_clients, guild=ctx.guild)
@@ -162,16 +125,14 @@ class MusicBot(commands.Cog):
             if vc.is_playing(): 
                 vc.stop()
 
-            # Trích xuất luồng audio trực tiếp từ link bằng yt-dlp
-            with yt_dlp.YoutubeDL(YTDL_OPTIONS) as ydl:
-                info = ydl.extract_info(track['url'], download=False)
-                stream_url = info['url']
+            # Lấy link stream thực tế (SoundCloud mượt mà không bao giờ chặn IP)
+            stream_url = track['url']
 
-            await ctx.send(f"🎶 Đang phát: **{track['title']}** tại phòng `{voice_channel.name}`")
+            await ctx.send(f"🧡 **Đang phát (SoundCloud):** **{track.get('title')}** tại phòng `{voice_channel.name}`")
             vc.play(discord.FFmpegPCMAudio(executable="ffmpeg", source=stream_url, **FFMPEG_OPTIONS))
             
         except Exception as e:
-            await ctx.send(f"❌ Lỗi khi phát nhạc vào phòng voice: {e}")
+            await ctx.send(f"❌ Lỗi khi phát nhạc SoundCloud: {e}")
 
 async def setup(bot):
     await bot.add_cog(MusicBot(bot))

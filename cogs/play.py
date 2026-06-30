@@ -86,18 +86,44 @@ class MusicBot(commands.Cog):
         return buffer
 
     # Đổi tên lệnh thành play theo yêu cầu của Việt
-    @commands.command(name="play")
+   @commands.command(name="play")
     async def play_command(self, ctx, *, query: str):
-        """Tìm kiếm nhạc trên SoundCloud và trả về menu ảnh"""
+        """Phát nhạc từ SoundCloud (Hỗ trợ cả từ khóa tìm kiếm lẫn Link trực tiếp)"""
         if not ctx.author.voice or not ctx.author.voice.channel:
-            await ctx.send("❌ Việt ơi, bạn phải vào một phòng thoại (Voice Channel) trước đã nha!")
+            await ctx.send("❌ Bạn phải vào một phòng thoại (Voice Channel) trước đã nha!")
             return
 
-        await ctx.send(f"🔍 Đang tìm kiếm bài hát: **{query}** trên SoundCloud...")
+        query_strip = query.strip()
+
+        # TRƯỜNG HỢP 1: Người dùng dán thẳng link SoundCloud
+        if "soundcloud.com" in query_strip:
+            await ctx.send("🔗 Đã nhận diện đường link SoundCloud! Đang xử lý dữ liệu bài hát...")
+            with yt_dlp.YoutubeDL(YTDL_OPTIONS) as ydl:
+                try:
+                    info = ydl.extract_info(query_strip, download=False)
+                    # Đưa thẳng bài hát vào hàng đợi phát
+                    guild_id = ctx.guild.id
+                    if guild_id not in self.queues:
+                        self.queues[guild_id] = []
+                    
+                    self.queues[guild_id].append(info)
+                    
+                    vc = discord.utils.get(self.bot.voice_clients, guild=ctx.guild)
+                    if vc and vc.is_playing():
+                        await ctx.send(f"➕ Đã thêm bài **{info.get('title')}** vào hàng đợi danh sách phát! (Vị trí số: `{len(self.queues[guild_id])}`)")
+                    else:
+                        await self.check_queue_and_play(ctx)
+                        
+                except Exception as e:
+                    await ctx.send(f"❌ Lỗi khi tải thông tin từ link này: {e}")
+            return
+
+        # TRƯỜNG HỢP 2: Người dùng gõ từ khóa tìm kiếm (Giữ nguyên logic cũ)
+        await ctx.send(f"🔍 Đang tìm kiếm bài hát: **{query_strip}** trên SoundCloud...")
 
         with yt_dlp.YoutubeDL(YTDL_OPTIONS) as ydl:
             try:
-                info = ydl.extract_info(f"scsearch5:{query}", download=False)
+                info = ydl.extract_info(f"scsearch5:{query_strip}", download=False)
                 if 'entries' not in info or not info['entries']:
                     await ctx.send("❌ Không tìm thấy bài hát nào phù hợp.")
                     return

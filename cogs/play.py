@@ -22,12 +22,13 @@ class MusicView(discord.ui.View):
         self.cog = cog
         self.guild_id = guild_id
 
-    @discord.ui.button(label="⏮️ Giảm Vol", style=discord.Style.secondary)
-    async def vol_down(self, item, interaction: discord.Interaction):
+    # Đổi toàn bộ discord.Style thành discord.ButtonStyle
+    @discord.ui.button(label="⏮️ Giảm Vol", style=discord.ButtonStyle.secondary)
+    async def vol_down(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.cog.adjust_volume(interaction, self.guild_id, -0.2)
 
-    @discord.ui.button(label="⏸️ Tạm Dừng", style=discord.Style.primary)
-    async def pause_resume(self, item, interaction: discord.Interaction):
+    @discord.ui.button(label="⏸️ Tạm Dừng", style=discord.ButtonStyle.primary)
+    async def pause_resume(self, interaction: discord.Interaction, button: discord.ui.Button):
         vc = discord.utils.get(self.cog.bot.voice_clients, guild=interaction.guild)
         if not vc:
             await interaction.response.send_message("❌ Bot có đang ở trong phòng voice đâu Việt ơi.", ephemeral=True)
@@ -40,8 +41,8 @@ class MusicView(discord.ui.View):
             vc.resume()
             await interaction.response.send_message("▶️ Tiếp tục phát nhạc!", ephemeral=True)
 
-    @discord.ui.button(label="⏭️ Skip Bài", style=discord.Style.danger)
-    async def skip(self, item, interaction: discord.Interaction):
+    @discord.ui.button(label="⏭️ Skip Bài", style=discord.ButtonStyle.danger)
+    async def skip(self, interaction: discord.Interaction, button: discord.ui.Button):
         vc = discord.utils.get(self.cog.bot.voice_clients, guild=interaction.guild)
         if vc and (vc.is_playing() or vc.is_paused()):
             vc.stop() # Dừng bài cũ, sự kiện 'after' trong vc.play sẽ tự bốc bài tiếp theo
@@ -49,8 +50,8 @@ class MusicView(discord.ui.View):
         else:
             await interaction.response.send_message("❌ Hiện tại không có bài nào đang phát để skip.", ephemeral=True)
 
-    @discord.ui.button(label="⏭️ Tăng Vol", style=discord.Style.secondary)
-    async def vol_up(self, item, interaction: discord.Interaction):
+    @discord.ui.button(label="⏭️ Tăng Vol", style=discord.ButtonStyle.secondary)
+    async def vol_up(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.cog.adjust_volume(interaction, self.guild_id, 0.2)
 
 

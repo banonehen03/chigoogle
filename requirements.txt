@@ -8,3 +8,5 @@ requests
 PyNaCl
 moviepy
 psutil
+yt-dlp
+Pillow

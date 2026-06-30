@@ -13,7 +13,14 @@ YTDL_OPTIONS = {
     'noplaylist': True,
     'quiet': True,
     'source_address': '0.0.0.0',
-    'nocheckcertificate': True
+    'nocheckcertificate': True,
+    # Thêm cấu hình bypass luồng video khi chạy play_audio
+    'extractor_args': {
+        'youtube': {
+            'player_client': ['android_music', 'ios'],
+            'skip': ['webpage', 'authcheck']
+        }
+    }
 }
 
 FFMPEG_OPTIONS = {

@@ -13,7 +13,10 @@ YTDL_OPTIONS = {
     'noplaylist': True,
     'quiet': True,
     'default_search': 'auto',
-    'source_address': '0.0.0.0'
+    'source_address': '0.0.0.0',
+    # Bật tính năng xác thực thiết bị
+    'username': 'oauth2',
+    'password': ''
 }
 
 FFMPEG_OPTIONS = {

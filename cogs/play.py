@@ -18,11 +18,10 @@ YTDL_OPTIONS = {
 class MusicView(discord.ui.View):
     """Bảng công cụ điều khiển nhạc bằng nút bấm trực quan"""
     def __init__(self, cog, guild_id):
-        super().__init__(timeout=None) # Giữ nút bấm hoạt động vĩnh viễn không bị hết hạn
+        super().__init__(timeout=None)
         self.cog = cog
         self.guild_id = guild_id
 
-    # Đổi toàn bộ discord.Style thành discord.ButtonStyle
     @discord.ui.button(label="⏮️ Giảm Vol", style=discord.ButtonStyle.secondary)
     async def vol_down(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.cog.adjust_volume(interaction, self.guild_id, -0.2)
@@ -31,7 +30,7 @@ class MusicView(discord.ui.View):
     async def pause_resume(self, interaction: discord.Interaction, button: discord.ui.Button):
         vc = discord.utils.get(self.cog.bot.voice_clients, guild=interaction.guild)
         if not vc:
-            await interaction.response.send_message("❌ Bot có đang ở trong phòng voice đâu Việt ơi.", ephemeral=True)
+            await interaction.response.send_message("❌ Bot không ở trong phòng voice thoại.", ephemeral=True)
             return
         
         if vc.is_playing():
@@ -45,8 +44,8 @@ class MusicView(discord.ui.View):
     async def skip(self, interaction: discord.Interaction, button: discord.ui.Button):
         vc = discord.utils.get(self.cog.bot.voice_clients, guild=interaction.guild)
         if vc and (vc.is_playing() or vc.is_paused()):
-            vc.stop() # Dừng bài cũ, sự kiện 'after' trong vc.play sẽ tự bốc bài tiếp theo
-            await interaction.response.send_message("⏭️ Đã bỏ qua bài hát hiện tại!", ephemeral=True)
+            vc.stop()
+            await interaction.response.send_message("⏭️ Đã bỏ qua bài hiện tại!", ephemeral=True)
         else:
             await interaction.response.send_message("❌ Hiện tại không có bài nào đang phát để skip.", ephemeral=True)
 
@@ -59,8 +58,8 @@ class MusicBot(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.search_results = {}
-        self.queues = {}       # Lưu danh sách hàng đợi theo từng Server: {guild_id: [track1, track2, ...]}
-        self.volumes = {}      # Lưu mức âm lượng theo từng Server: {guild_id: current_volume_float}
+        self.queues = {}       
+        self.volumes = {}      
 
     def create_menu_image(self, tracks):
         img_h = (len(tracks) * 60) + 60
@@ -85,8 +84,7 @@ class MusicBot(commands.Cog):
         buffer.seek(0)
         return buffer
 
-    # Đổi tên lệnh thành play theo yêu cầu của Việt
-   @commands.command(name="play")
+    @commands.command(name="play")
     async def play_command(self, ctx, *, query: str):
         """Phát nhạc từ SoundCloud (Hỗ trợ cả từ khóa tìm kiếm lẫn Link trực tiếp)"""
         if not ctx.author.voice or not ctx.author.voice.channel:
@@ -95,13 +93,12 @@ class MusicBot(commands.Cog):
 
         query_strip = query.strip()
 
-        # TRƯỜNG HỢP 1: Người dùng dán thẳng link SoundCloud
+        # TRƯỜNG HỢP 1: Dán thẳng link SoundCloud
         if "soundcloud.com" in query_strip:
-            await ctx.send("🔗 Đã nhận diện đường link SoundCloud! Đang xử lý dữ liệu bài hát...")
+            await ctx.send("🔗 Đã nhận diện đường link SoundCloud! Đang xử lý dữ liệu...")
             with yt_dlp.YoutubeDL(YTDL_OPTIONS) as ydl:
                 try:
                     info = ydl.extract_info(query_strip, download=False)
-                    # Đưa thẳng bài hát vào hàng đợi phát
                     guild_id = ctx.guild.id
                     if guild_id not in self.queues:
                         self.queues[guild_id] = []
@@ -118,7 +115,7 @@ class MusicBot(commands.Cog):
                     await ctx.send(f"❌ Lỗi khi tải thông tin từ link này: {e}")
             return
 
-        # TRƯỜNG HỢP 2: Người dùng gõ từ khóa tìm kiếm (Giữ nguyên logic cũ)
+        # TRƯỜNG HỢP 2: Gõ từ khóa tìm kiếm
         await ctx.send(f"🔍 Đang tìm kiếm bài hát: **{query_strip}** trên SoundCloud...")
 
         with yt_dlp.YoutubeDL(YTDL_OPTIONS) as ydl:
@@ -138,13 +135,12 @@ class MusicBot(commands.Cog):
             except Exception as e:
                 await ctx.send(f"❌ Lỗi khi tìm kiếm nhạc: {e}")
 
-    # Lệnh xem danh sách phát hiện tại hàng đợi
     @commands.command(name="queue")
     async def view_queue(self, ctx):
         """Xem danh sách các bài hát đang chờ phát tiếp theo"""
         guild_id = ctx.guild.id
         if guild_id not in self.queues or not self.queues[guild_id]:
-            await ctx.send("📭 Hàng đợi hiện tại đang trống rỗng Việt ơi!")
+            await ctx.send("📭 Hàng đợi hiện tại đang trống rỗng!")
             return
 
         embed = discord.Embed(title="📜 DANH SÁCH BÀI HÁT ĐANG CHỜ", color=discord.Color.orange())
@@ -172,7 +168,6 @@ class MusicBot(commands.Cog):
                     
                     ctx = await self.bot.get_context(message)
                     
-                    # Thêm bài hát vào hàng đợi thay vì phát đè ngay lập tức
                     guild_id = ctx.guild.id
                     if guild_id not in self.queues:
                         self.queues[guild_id] = []
@@ -182,17 +177,13 @@ class MusicBot(commands.Cog):
                     if vc and vc.is_playing():
                         await ctx.send(f"➕ Đã thêm bài **{selected_track.get('title')}** vào hàng đợi danh sách phát! (Vị trí số: `{len(self.queues[guild_id])}`)")
                     else:
-                        # Nếu bot đang rảnh, kích hoạt phát nhạc ngay bài đầu tiên
                         await self.check_queue_and_play(ctx)
 
     async def check_queue_and_play(self, ctx):
         guild_id = ctx.guild.id
-        
-        # Nếu hết bài trong hàng đợi
         if guild_id not in self.queues or not self.queues[guild_id]:
             return
 
-        # Bốc bài hát đầu tiên ra khỏi danh sách chờ
         track = self.queues[guild_id].pop(0)
         voice_channel = ctx.author.voice.channel
 
@@ -203,18 +194,13 @@ class MusicBot(commands.Cog):
             else:
                 vc = await voice_channel.connect()
 
-            # Mặc định mức âm lượng ban đầu là 100% nếu chưa thiết lập
             if guild_id not in self.volumes:
                 self.volumes[guild_id] = 1.0
 
-            # Tạo bộ lọc âm lượng chuyên nghiệp cho Audio Source
             ffmpeg_options = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
             audio_source = discord.FFmpegPCMAudio(executable="ffmpeg", source=track['url'], **ffmpeg_options)
-            
-            # Biến đổi thành PCMVolumeTransformer để tăng giảm âm lượng động
             volume_source = discord.PCMVolumeTransformer(audio_source, volume=self.volumes[guild_id])
 
-            # Hàm tự động kích hoạt khi bài hát kết thúc để bốc bài tiếp theo
             def after_playing(error):
                 fut = asyncio.run_coroutine_threadsafe(self.check_queue_and_play(ctx), self.bot.loop)
                 try:
@@ -224,7 +210,6 @@ class MusicBot(commands.Cog):
 
             vc.play(volume_source, after=after_playing)
 
-            # Đẩy Embed bảng công cụ điều khiển giao diện lên phòng chat kèm nút bấm
             embed = discord.Embed(title="🧡 ĐANG PHÁT NHẠC (SOUNDCLOUD)", color=discord.Color.green())
             embed.add_field(name="🎵 Bài hát", value=f"**{track.get('title')}**", inline=False)
             embed.add_field(name="🔊 Âm lượng hiện tại", value=f"`{int(self.volumes[guild_id] * 100)}%`", inline=True)
@@ -236,18 +221,14 @@ class MusicBot(commands.Cog):
         except Exception as e:
             await ctx.send(f"❌ Lỗi khi phát nhạc từ hàng đợi: {e}")
 
-    # Hàm logic phụ trách tăng giảm âm lượng khi bấm nút
     async def adjust_volume(self, interaction: discord.Interaction, guild_id, change):
         vc = discord.utils.get(self.bot.voice_clients, guild=interaction.guild)
         if not vc or not vc.source:
             await interaction.response.send_message("❌ Không có bài hát nào đang phát để chỉnh âm lượng!", ephemeral=True)
             return
 
-        # Tính toán mức volume mới nằm trong khoảng giới hạn an toàn [0% đến 200%]
         new_vol = max(0.0, min(2.0, self.volumes.get(guild_id, 1.0) + change))
         self.volumes[guild_id] = new_vol
-        
-        # Áp dụng trực tiếp vào luồng phát của bot ngay lập tức
         vc.source.volume = new_vol
         
         await interaction.response.send_message(f"🔊 Đã chỉnh âm lượng lên: `{int(new_vol * 100)}%`", ephemeral=True)
